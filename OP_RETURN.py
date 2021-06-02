@@ -39,13 +39,16 @@ except NameError:
 OP_RETURN_BITCOIN_IP='127.0.0.1' # IP address of your bitcoin node
 OP_RETURN_BITCOIN_USE_CMD=True # use command-line instead of JSON-RPC?
 
+OPERATING_SYSTEM=os.name
+
 if OP_RETURN_BITCOIN_USE_CMD:
+	#Windows default path C:\Program Files\Groestlcoin\daemon\groestlcoin-cli
 	OP_RETURN_BITCOIN_PATH='/usr/bin/groestlcoin-cli' # path to groestlcoin-cli executable on this server
 
 else:
 	OP_RETURN_BITCOIN_PORT='' # leave empty to use default port for mainnet/testnet
-	OP_RETURN_BITCOIN_USER='' # leave empty to read from ~/.groestlcoin/groestlcoin.conf (Unix only)
-	OP_RETURN_BITCOIN_PASSWORD='' # leave empty to read from ~/.groestlcoin/groestlcoin.conf (Unix only)
+	OP_RETURN_BITCOIN_USER='' # leave empty to read from ~/.groestlcoin/groestlcoin.conf (Unix) or ~\AppData\Roaming\Groestlcoin\groestlcoin.conf (Windows)
+	OP_RETURN_BITCOIN_PASSWORD='' # leave empty to read from ~/.groestlcoin/groestlcoin.conf (Unix) or ~\AppData\Roaming\Groestlcoin\groestlcoin.conf (Windows)
 
 OP_RETURN_BTC_FEE=0.0001 # BTC fee to pay per transaction
 OP_RETURN_BTC_DUST=0.00001 # omit BTC outputs smaller than this
@@ -442,9 +445,16 @@ def OP_RETURN_bitcoin_cmd(command, testnet, *args): # more params are read from 
 		port=OP_RETURN_BITCOIN_PORT
 		user=OP_RETURN_BITCOIN_USER
 		password=OP_RETURN_BITCOIN_PASSWORD
+		
+		if (port is None) or (port == 0):
+			port = ''
 
 		if not (len(port) and len(user) and len(password)):
-			conf_lines=open(os.path.expanduser('~')+'/.groestlcoin/groestlcoin.conf').readlines()
+			
+			if OPERATING_SYSTEM == 'nt':
+				conf_lines=open(os.path.expanduser('~')+'\AppData\Roaming\Groestlcoin\groestlcoin.conf').readlines()
+			else:
+				conf_lines=open(os.path.expanduser('~')+'/.groestlcoin/groestlcoin.conf').readlines()
 
 			for conf_line in conf_lines:
 				parts=conf_line.strip().split('=', 1) # up to 2 parts
@@ -456,7 +466,7 @@ def OP_RETURN_bitcoin_cmd(command, testnet, *args): # more params are read from 
 				if (parts[0]=='rpcpassword') and not len(password):
 					password=parts[1]
 
-		if (port is None) or (port==0):
+		if (port == ''):
 			port=17766 if testnet else 1441
 
 		if not (len(user) and len(password)):
